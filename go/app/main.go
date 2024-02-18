@@ -29,7 +29,7 @@ type Item struct {
 	ID     string `json:"id"`
 	Name     string `json:"name"`
 	Category string `json:"category"`
-	ImageName string `json:"img"`
+	imageFilename string `json:"img"`
 }
 
 
@@ -141,7 +141,7 @@ func addItem(c echo.Context) error {
 		return err
 	}
 
-	newItem := Item{ID:id, Name: name, Category: category, ImageName:img_name}
+	newItem := Item{ID:id, Name: name, Category: category, imageFilename:img_name}
 
 	// Read the current item list from items.json
 	var items Items
@@ -191,7 +191,8 @@ func main() {
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.Logger.SetLevel(log.INFO)
+	// Set log level (Only messages above the ERROR level are recorded in the production environment)
+	e.Logger.SetLevel(log.DEBUG)
 
 	frontURL := os.Getenv("FRONT_URL")
 	if frontURL == "" {
@@ -207,7 +208,7 @@ func main() {
 	e.GET("/items", getItems)
 	e.GET("/items/:id", getItem)
 	e.POST("/items", addItem)
-	e.GET("/image/:img_name", getImg)
+	e.GET("/image/:imageFilename", getImg)
 
 
 	// Start server
