@@ -18,20 +18,25 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
+
 const (
 	ImgDir = "images"
 	ItemsFile  = "app/items.json"
 )
 
+
 type Item struct {
+	ID     string `json:"id"`
 	Name     string `json:"name"`
 	Category string `json:"category"`
 	ImageName string `json:"img"`
 }
 
+
 type Items struct {
 	Items []Item `json:"items"`
 }
+
 
 // load of items.json
 func loadItemsFromFile() ([]Item, error) {
@@ -48,14 +53,17 @@ func loadItemsFromFile() ([]Item, error) {
 	return items.Items, nil
 }
 
+
 type Response struct {
 	Message string `json:"message"`
 }
+
 
 func root(c echo.Context) error {
 	res := Response{Message: "Hello, world!"}
 	return c.JSON(http.StatusOK, res)
 }
+
 
 // Get item List
 func getItems(c echo.Context) error {
@@ -66,7 +74,32 @@ func getItems(c echo.Context) error {
 	return c.JSON(http.StatusOK, Items{Items: items})
 }
 
+
+// Get item by ID
+func getItem(c echo.Context) error {
+	// Get item_id from URL
+	id := c.Param("id")
+
+	// Get item list
+	items, err := loadItemsFromFile()
+	if err != nil {
+			return err
+	}
+
+	// Find the item matching id
+	for _, item := range items {
+		if item.ID == id {
+					return c.JSON(http.StatusOK, item)
+			}
+	}
+
+	// If the item is not found
+	return c.JSON(http.StatusNotFound, map[string]string{"message": "Item not found"})
+}
+
+
 func addItem(c echo.Context) error {
+	id := c.FormValue("id")
 	name := c.FormValue("name")
 	category := c.FormValue("category")
 
@@ -108,7 +141,7 @@ func addItem(c echo.Context) error {
 		return err
 	}
 
-	newItem := Item{Name: name, Category: category, ImageName:img_name}
+	newItem := Item{ID:id, Name: name, Category: category, ImageName:img_name}
 
 	// Read the current item list from items.json
 	var items Items
@@ -135,6 +168,7 @@ func addItem(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, res)
 }
+
 
 func getImg(c echo.Context) error {
 	// Create image path
@@ -171,8 +205,9 @@ func main() {
 	// Routes
 	e.GET("/", root)
 	e.GET("/items", getItems)
+	e.GET("/items/:id", getItem)
 	e.POST("/items", addItem)
-	e.GET("/image/:imageFilename", getImg)
+	e.GET("/image/:img_name", getImg)
 
 
 	// Start server
