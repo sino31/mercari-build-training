@@ -69,8 +69,7 @@ func root(c echo.Context) error {
 func getItems(c echo.Context) error {
 	items, err := loadItemsFromFile()
 	if err != nil {
-		c.Logger().Errorf("Failed to load items from file: %v", err)
-    return c.JSON(http.StatusInternalServerError, Response{Message: "Failed to load items."})
+			return err
 	}
 	return c.JSON(http.StatusOK, Items{Items: items})
 }
@@ -84,8 +83,7 @@ func getItem(c echo.Context) error {
 	// Get item list
 	items, err := loadItemsFromFile()
 	if err != nil {
-		c.Logger().Errorf("Failed to load items from file: %v", err)
-    return c.JSON(http.StatusInternalServerError, Response{Message: "Failed to load items."})
+			return err
 	}
 
 	// Find the item matching id
@@ -108,24 +106,21 @@ func addItem(c echo.Context) error {
 	// Receive image files
 	file, err := c.FormFile("image")
 	if err != nil {
-		c.Logger().Errorf("Failed to receive the file: %v", err)
-    return c.JSON(http.StatusBadRequest, Response{Message: "Failed to receive the file"})
+		return err
 	}
 	c.Logger().Infof("Receive item: %s", name)
 
 	// Open file
 	src, err := file.Open()
 	if err != nil {
-		c.Logger().Errorf("Failed to open the file: %v", err)
-    return c.JSON(http.StatusInternalServerError, Response{Message: "Failed to open the file"})
+		return err
 	}
 	defer src.Close()
 
 	// Read file and calculate hash value
 	hash := sha256.New()
 	if _, err := io.Copy(hash, src); err != nil {
-		c.Logger().Errorf("Failed to calculate the file hash: %v", err)
-    return c.JSON(http.StatusInternalServerError, Response{Message: "Failed to calculate the file hash"})
+		return err
 	}
 	hashInBytes := hash.Sum(nil)
 	hashString := hex.EncodeToString(hashInBytes)
@@ -136,16 +131,14 @@ func addItem(c echo.Context) error {
 	// Save images in the images directory
 	dst, err := os.Create(filepath.Join(ImgDir, img_name))
 	if err != nil {
-		c.Logger().Errorf("Failed to save the image: %v", err)
-    return c.JSON(http.StatusInternalServerError, Response{Message: "Failed to save the image"})
+		return err
 	}
 	defer dst.Close()
 
 	// move the file pointer back to the beginning
 	src.Seek(0, io.SeekStart)
 	if _, err := io.Copy(dst, src); err != nil {
-		c.Logger().Errorf("Failed to save the image: %v", err)
-    return c.JSON(http.StatusInternalServerError, Response{Message: "Failed to save the image"})
+		return err
 	}
 
 	newItem := Item{ID:id, Name: name, Category: category, imageFilename:img_name}
@@ -161,15 +154,13 @@ func addItem(c echo.Context) error {
 	items.Items = append(items.Items, newItem)
 	updatedData, err := json.Marshal(items)
 	if err != nil {
-		c.Logger().Errorf("Failed to update the item list: %v", err)
-  	return c.JSON(http.StatusInternalServerError, Response{Message: "Failed to update the item list"})
+		return err
 	}
 
 	// Encode updated item list to JSON
 	err = ioutil.WriteFile(ItemsFile, updatedData, 0644)
 	if err != nil {
-		c.Logger().Errorf("Failed to save the item list: %v", err)
-    return c.JSON(http.StatusInternalServerError, Response{Message: "Failed to save the item list"})
+		return err
 	}
 
 	message := fmt.Sprintf("item received: %s", name)
@@ -184,7 +175,8 @@ func getImg(c echo.Context) error {
 	imgPath := path.Join(ImgDir, c.Param("imageFilename"))
 
 	if !strings.HasSuffix(imgPath, ".jpg") {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Image path does not end with .jpg"})
+		res := Response{Message: "Image path does not end with .jpg"}
+		return c.JSON(http.StatusBadRequest, res)
 	}
 	if _, err := os.Stat(imgPath); err != nil {
 		c.Logger().Debugf("Image not found: %s", imgPath)
