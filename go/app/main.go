@@ -104,7 +104,24 @@ func getItem(c echo.Context) error {
 	}
 
 	// If the item is not found
-	return c.JSON(http.StatusNotFound, map[string]string{"message": "Item not found"})
+	return c.JSON(http.StatusNotFound, Response{Message: "Item not found"})
+}
+
+
+// Check if the item ID is unique
+func isItemIDUnique(id string) (bool, error) {
+	items, err := loadItemsFromDB()
+	if err != nil {
+		return false, err
+	}
+
+	for _, item := range items {
+		if item.ID == id {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 
@@ -142,6 +159,14 @@ func searchItems(c echo.Context) error {
 
 func addItem(c echo.Context) error {
 	id := c.FormValue("id")
+	isUnique, err := isItemIDUnique(id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Internal server error"})
+	}
+	if !isUnique {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Item ID is not unique"})
+	}
+
 	name := c.FormValue("name")
 	category := c.FormValue("category")
 
