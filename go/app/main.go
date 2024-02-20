@@ -8,11 +8,11 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"encoding/json"
-	"io/ioutil"
 	"crypto/sha256"
 	"encoding/hex"
+	"database/sql"
 
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -20,8 +20,7 @@ import (
 
 
 const (
-	ImgDir = "images"
-	ItemsFile  = "app/items.json"
+	ImgDir = "go/images"
 )
 
 
@@ -38,19 +37,30 @@ type Items struct {
 }
 
 
-// load of items.json
-func loadItemsFromFile() ([]Item, error) {
-	var items Items
-	data, err := ioutil.ReadFile(ItemsFile)
+// load of db
+func loadItemsFromDB() ([]Item, error) {
+	// Open the db
+	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
 	if err != nil {
 			return nil, err
 	}
-	// Convert data from json to go
-	err = json.Unmarshal(data, &items)
+	defer db.Close()
+
+	rows, err := db.Query("SELECT id, name, category, image_name FROM items")
 	if err != nil {
 			return nil, err
 	}
-	return items.Items, nil
+	defer rows.Close()
+
+	var items []Item
+	for rows.Next() {
+			var item Item
+			if err := rows.Scan(&item.ID, &item.Name, &item.Category, &item.imageFilename); err != nil {
+					return nil, err
+			}
+			items = append(items, item)
+	}
+	return items, nil
 }
 
 
@@ -67,7 +77,7 @@ func root(c echo.Context) error {
 
 // Get item List
 func getItems(c echo.Context) error {
-	items, err := loadItemsFromFile()
+	items, err := loadItemsFromDB()
 	if err != nil {
 			return err
 	}
@@ -77,11 +87,11 @@ func getItems(c echo.Context) error {
 
 // Get item by ID
 func getItem(c echo.Context) error {
-	// Get item_id from URL
+	// Get id from URL
 	id := c.Param("id")
 
 	// Get item list
-	items, err := loadItemsFromFile()
+	items, err := loadItemsFromDB()
 	if err != nil {
 			return err
 	}
@@ -95,6 +105,38 @@ func getItem(c echo.Context) error {
 
 	// If the item is not found
 	return c.JSON(http.StatusNotFound, map[string]string{"message": "Item not found"})
+}
+
+
+// Search products containing keywords from db
+func searchItems(c echo.Context) error {
+	// Get keyword from URL
+	keyword := c.QueryParam("keyword")
+
+	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
+	if err != nil {
+			return err
+	}
+	defer db.Close()
+
+	// LIKE to search for products that contain keywords in the name
+	query := "SELECT id, name, category, image_name FROM items WHERE name LIKE ?"
+	rows, err := db.Query(query, "%"+keyword+"%")
+	if err != nil {
+			return err
+	}
+	defer rows.Close()
+
+	// Stores data in the Item structure (if multiple hits are received, they are all grouped together as items)
+	var items []Item
+	for rows.Next() {
+			var item Item
+			if err := rows.Scan(&item.ID, &item.Name, &item.Category, &item.imageFilename); err != nil {
+					return err
+			}
+			items = append(items, item)
+	}
+	return c.JSON(http.StatusOK, Items{Items: items})
 }
 
 
@@ -141,26 +183,20 @@ func addItem(c echo.Context) error {
 		return err
 	}
 
-	newItem := Item{ID:id, Name: name, Category: category, imageFilename:img_name}
+	newItem := Item{ID: id, Name: name, Category: category, imageFilename: img_name}
 
-	// Read the current item list from items.json
-	var items Items
-	data, err := ioutil.ReadFile(ItemsFile)
-	if err == nil {
-		json.Unmarshal(data, &items)
-	}
-
-	//　Add new item to list
-	items.Items = append(items.Items, newItem)
-	updatedData, err := json.Marshal(items)
+	// Open the db
+	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
 	if err != nil {
-		return err
+			return err
 	}
+	defer db.Close()
 
-	// Encode updated item list to JSON
-	err = ioutil.WriteFile(ItemsFile, updatedData, 0644)
+	// Add new items to the db
+	_, err = db.Exec("INSERT INTO items (id, name, category, image_name) VALUES (?, ?, ?, ?)",
+			newItem.ID, newItem.Name, newItem.Category, newItem.imageFilename)
 	if err != nil {
-		return err
+			return err
 	}
 
 	message := fmt.Sprintf("item received: %s", name)
@@ -185,7 +221,11 @@ func getImg(c echo.Context) error {
 	return c.File(imgPath)
 }
 
+
 func main() {
+	if err := os.Chdir("../"); err != nil {
+		log.Fatalf("Failed to change current directory: %v", err)
+	}
 	e := echo.New()
 
 	// Middleware
@@ -207,9 +247,9 @@ func main() {
 	e.GET("/", root)
 	e.GET("/items", getItems)
 	e.GET("/items/:id", getItem)
+	e.GET("/search", searchItems)
 	e.POST("/items", addItem)
 	e.GET("/image/:imageFilename", getImg)
-
 
 	// Start server
 	e.Logger.Fatal(e.Start(":9000"))
