@@ -1,2 +1,4 @@
 db/*.sqlite3
 go.sum
+.DS_Store
+go/.DS_Store
