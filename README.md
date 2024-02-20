@@ -4,7 +4,6 @@ This is sino31's build training repository.
 
 Build training の前半では個人で課題に取り組んでもらい、Web 開発の基礎知識をつけていただきます。
 ドキュメントには詳細なやり方は記載しません。自身で検索したり、リファレンスを確認したり、チームメイトと協力して各課題をクリアしましょう。
-
 ドキュメントには以下のような記載があるので、課題を進める際に参考にしてください。
 
 In the first half of Build@Mercari program, you will work on individual tasks to understand the basics of web development. Detailed instructions are not given in each step of the program, and you are encouraged to use official documents and external resources, as well as discussing tasks with your teammates and mentors.
