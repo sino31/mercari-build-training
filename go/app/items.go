@@ -28,10 +28,8 @@ func getItems(c echo.Context) error {
 
 // Get item by ID
 func getItem(c echo.Context) error {
-	// Get id from URL
 	idStr := c.Param("id")
 
-	// Get item list
 	items, err := loadItemsFromDB()
 	if err != nil {
 			return err
@@ -47,15 +45,12 @@ func getItem(c echo.Context) error {
 					return c.JSON(http.StatusOK, item)
 			}
 	}
-
-	// If the item is not found
 	return c.JSON(http.StatusNotFound, Response{Message: "Item not found"})
 }
 
 
 // Search products containing keywords from db
 func searchItems(c echo.Context) error {
-	// Get keyword from URL
 	keyword := c.QueryParam("keyword")
 
 	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
@@ -85,21 +80,19 @@ func searchItems(c echo.Context) error {
 }
 
 
-
+// Add item
 func addItem(c echo.Context) error {
 	idStr := c.FormValue("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 			return c.JSON(http.StatusBadRequest, Response{Message: "Invalid ID format"})
 	}
-
 	name := c.FormValue("name")
 	category := c.FormValue("category")
 	category_id, err := getCategoryID(category);
 	if err != nil {
 		return err
 	}
-
 	// Receive image files
 	file, err := c.FormFile("image")
 	if err != nil {
@@ -119,8 +112,6 @@ func addItem(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-
-	// Generate file names from hash values
 	img_name := hashString + ".jpg"
 
 	// Save images in the images directory

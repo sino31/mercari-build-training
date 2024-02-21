@@ -8,9 +8,8 @@ import (
 )
 
 
-// load of db
+// load of items db
 func loadItemsFromDB() ([]Item, error) {
-	// Open the db
 	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
 	if err != nil {
 			return nil, err
@@ -35,6 +34,7 @@ func loadItemsFromDB() ([]Item, error) {
 }
 
 
+// load of categories db
 func loadCategoriesFromDB() ([]Category, error) {
 	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
 	if err != nil {
@@ -51,7 +51,7 @@ func loadCategoriesFromDB() ([]Category, error) {
 	var Categories []Category
 	for rows.Next() {
 			var Category Category
-			if err := rows.Scan(&Category.ID, &Category.Name); 
+			if err := rows.Scan(&Category.ID, &Category.Name);
 			err != nil {
 					return nil, err
 			}
@@ -61,6 +61,7 @@ func loadCategoriesFromDB() ([]Category, error) {
 }
 
 
+// Get category_id from category name
 func getCategoryID(category_name string) (int, error) {
 	categories, err := loadCategoriesFromDB()
 	if err != nil {

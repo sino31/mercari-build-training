@@ -25,7 +25,6 @@ func getCategories(c echo.Context) error {
 
 // Get Category by ID
 func getCategory(c echo.Context) error {
-	// Get id from URL
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -44,8 +43,6 @@ func getCategory(c echo.Context) error {
 					return c.JSON(http.StatusOK, Category)
 			}
 	}
-
-	// If the Category is not found
 	return c.JSON(http.StatusNotFound, Response{Message: "Category not found"})
 }
 
@@ -60,7 +57,7 @@ func addCategory(c echo.Context) error {
 
 	name := c.FormValue("name")
 
-	newItem := Item{ID: id, Name: name}
+	newCategory := Category{ID: id, Name: name}
 
 	// Open the db
 	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
@@ -70,7 +67,7 @@ func addCategory(c echo.Context) error {
 	defer db.Close()
 
 	// Add new category to the db
-	_, err = db.Exec("INSERT INTO categories (id, name) VALUES (?, ?)", newItem.ID, newItem.Name)
+	_, err = db.Exec("INSERT INTO categories (id, name) VALUES (?, ?)", newCategory.ID, newCategory.Name)
 	if err != nil {
 			return err
 	}

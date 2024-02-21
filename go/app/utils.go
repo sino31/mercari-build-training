@@ -16,6 +16,7 @@ import (
 )
 
 
+// Generate image hash
 func GenerateImageHash(src io.Reader) (string, error) {
 	hash := sha256.New()
 	if _, err := io.Copy(hash, src); err != nil {
@@ -26,7 +27,6 @@ func GenerateImageHash(src io.Reader) (string, error) {
 
 
 func getImg(c echo.Context) error {
-	// Create image path
 	imgPath := path.Join(ImgDir, c.Param("imageFilename"))
 
 	if !strings.HasSuffix(imgPath, ".jpg") {
