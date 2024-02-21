@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"strconv"
 	"crypto/sha256"
 	"encoding/hex"
 	"database/sql"
@@ -25,15 +26,26 @@ const (
 
 
 type Item struct {
-	ID     string `json:"id"`
+	ID     int `json:"id"`
 	Name     string `json:"name"`
-	Category string `json:"category"`
+	Category_id int `json:"category"`
 	imageFilename string `json:"img"`
 }
 
 
 type Items struct {
 	Items []Item `json:"items"`
+}
+
+
+type Category struct {
+	ID     int `json:"id"`
+	Name     string `json:"name"`
+}
+
+
+type Categories struct {
+	Categories []Category `json:"Categories"`
 }
 
 
@@ -46,7 +58,7 @@ func loadItemsFromDB() ([]Item, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, name, category, image_name FROM items")
+	rows, err := db.Query("SELECT id, name, category_id, image_name FROM items")
 	if err != nil {
 			return nil, err
 	}
@@ -55,12 +67,38 @@ func loadItemsFromDB() ([]Item, error) {
 	var items []Item
 	for rows.Next() {
 			var item Item
-			if err := rows.Scan(&item.ID, &item.Name, &item.Category, &item.imageFilename); err != nil {
+			if err := rows.Scan(&item.ID, &item.Name, &item.Category_id, &item.imageFilename); err != nil {
 					return nil, err
 			}
 			items = append(items, item)
 	}
 	return items, nil
+}
+
+
+func loadCategoriesFromDB() ([]Category, error) {
+	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
+	if err != nil {
+			return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT id, name FROM categories")
+	if err != nil {
+			return nil, err
+	}
+	defer rows.Close()
+
+	var Categories []Category
+	for rows.Next() {
+			var Category Category
+			if err := rows.Scan(&Category.ID, &Category.Name); 
+			err != nil {
+					return nil, err
+			}
+			Categories = append(Categories, Category)
+	}
+	return Categories, nil
 }
 
 
@@ -85,10 +123,20 @@ func getItems(c echo.Context) error {
 }
 
 
+// Get Categories List
+func getCategories(c echo.Context) error {
+	categories, err := loadCategoriesFromDB()
+	if err != nil {
+			return err
+	}
+	return c.JSON(http.StatusOK, Categories{Categories: categories})
+}
+
+
 // Get item by ID
 func getItem(c echo.Context) error {
 	// Get id from URL
-	id := c.Param("id")
+	idStr := c.Param("id")
 
 	// Get item list
 	items, err := loadItemsFromDB()
@@ -98,6 +146,10 @@ func getItem(c echo.Context) error {
 
 	// Find the item matching id
 	for _, item := range items {
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, Response{Message: "Invalid ID format"})
+		}
 		if item.ID == id {
 					return c.JSON(http.StatusOK, item)
 			}
@@ -108,20 +160,30 @@ func getItem(c echo.Context) error {
 }
 
 
-// Check if the item ID is unique
-func isItemIDUnique(id string) (bool, error) {
-	items, err := loadItemsFromDB()
+// Get Category by ID
+func getCategory(c echo.Context) error {
+	// Get id from URL
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return false, err
+			return c.JSON(http.StatusBadRequest, Response{Message: "Invalid ID format"})
 	}
 
-	for _, item := range items {
-		if item.ID == id {
-			return false, nil
-		}
+	// Get Category list
+	Categories, err := loadCategoriesFromDB()
+	if err != nil {
+			return err
 	}
 
-	return true, nil
+	// Find the Category matching id
+	for _, Category := range Categories {
+		if Category.ID == id {
+					return c.JSON(http.StatusOK, Category)
+			}
+	}
+
+	// If the Category is not found
+	return c.JSON(http.StatusNotFound, Response{Message: "Category not found"})
 }
 
 
@@ -148,7 +210,7 @@ func searchItems(c echo.Context) error {
 	var items []Item
 	for rows.Next() {
 			var item Item
-			if err := rows.Scan(&item.ID, &item.Name, &item.Category, &item.imageFilename); err != nil {
+			if err := rows.Scan(&item.ID, &item.Name, &item.Category_id, &item.imageFilename); err != nil {
 					return err
 			}
 			items = append(items, item)
@@ -156,19 +218,32 @@ func searchItems(c echo.Context) error {
 	return c.JSON(http.StatusOK, Items{Items: items})
 }
 
+func loadCategoryID(category_name string) (int, error) {
+	categories, err := loadCategoriesFromDB()
+	if err != nil {
+			return 0,err
+	}
+	for _, category := range categories {
+		if category.Name == category_name {
+				return category.ID, nil
+		}
+	}
+	return 0, fmt.Errorf("Category not found")
+}
 
 func addItem(c echo.Context) error {
-	id := c.FormValue("id")
-	isUnique, err := isItemIDUnique(id)
+	idStr := c.FormValue("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Internal server error"})
-	}
-	if !isUnique {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Item ID is not unique"})
+			return c.JSON(http.StatusBadRequest, Response{Message: "Invalid ID format"})
 	}
 
 	name := c.FormValue("name")
 	category := c.FormValue("category")
+	category_id, err := loadCategoryID(category);
+	if err != nil {
+		return err
+	}
 
 	// Receive image files
 	file, err := c.FormFile("image")
@@ -208,7 +283,7 @@ func addItem(c echo.Context) error {
 		return err
 	}
 
-	newItem := Item{ID: id, Name: name, Category: category, imageFilename: img_name}
+	newItem := Item{ID: id, Name: name, Category_id: category_id, imageFilename: img_name}
 
 	// Open the db
 	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
@@ -218,8 +293,8 @@ func addItem(c echo.Context) error {
 	defer db.Close()
 
 	// Add new items to the db
-	_, err = db.Exec("INSERT INTO items (id, name, category, image_name) VALUES (?, ?, ?, ?)",
-			newItem.ID, newItem.Name, newItem.Category, newItem.imageFilename)
+	_, err = db.Exec("INSERT INTO items (id, name, category_id, image_name) VALUES (?, ?, ?, ?)",
+			newItem.ID, newItem.Name, newItem.Category_id, newItem.imageFilename)
 	if err != nil {
 			return err
 	}
@@ -244,6 +319,38 @@ func getImg(c echo.Context) error {
 		imgPath = path.Join(ImgDir, "default.jpg")
 	}
 	return c.File(imgPath)
+}
+
+
+// Create a categories
+func addCategory(c echo.Context) error {
+	idStr := c.FormValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+			return c.JSON(http.StatusBadRequest, Response{Message: "Invalid ID format"})
+	}
+
+	name := c.FormValue("name")
+
+	newItem := Item{ID: id, Name: name}
+
+	// Open the db
+	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
+	if err != nil {
+			return err
+	}
+	defer db.Close()
+
+	// Add new category to the db
+	_, err = db.Exec("INSERT INTO categories (id, name) VALUES (?, ?)", newItem.ID, newItem.Name)
+	if err != nil {
+			return err
+	}
+
+	message := fmt.Sprintf("category received: %s", name)
+	res := Response{Message: message}
+
+	return c.JSON(http.StatusOK, res)
 }
 
 
@@ -274,6 +381,9 @@ func main() {
 	e.GET("/items/:id", getItem)
 	e.GET("/search", searchItems)
 	e.POST("/items", addItem)
+	e.POST("/category", addCategory)
+	e.GET("/categories", getCategories)
+	e.GET("/categories/:id", getCategory)
 	e.GET("/image/:imageFilename", getImg)
 
 	// Start server
