@@ -1,62 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
-	"io"
-	"path"
-	"path/filepath"
-	"strings"
-	"encoding/json"
-	"io/ioutil"
-	"crypto/sha256"
-	"encoding/hex"
 
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 )
-
-
-const (
-	ImgDir = "images"
-	ItemsFile  = "app/items.json"
-)
-
-
-type Item struct {
-	ID     string `json:"id"`
-	Name     string `json:"name"`
-	Category string `json:"category"`
-	imageFilename string `json:"img"`
-}
-
-
-type Items struct {
-	Items []Item `json:"items"`
-}
-
-
-// load of items.json
-func loadItemsFromFile() ([]Item, error) {
-	var items Items
-	data, err := ioutil.ReadFile(ItemsFile)
-	if err != nil {
-			return nil, err
-	}
-	// Convert data from json to go
-	err = json.Unmarshal(data, &items)
-	if err != nil {
-			return nil, err
-	}
-	return items.Items, nil
-}
-
-
-type Response struct {
-	Message string `json:"message"`
-}
 
 
 func root(c echo.Context) error {
@@ -65,127 +17,10 @@ func root(c echo.Context) error {
 }
 
 
-// Get item List
-func getItems(c echo.Context) error {
-	items, err := loadItemsFromFile()
-	if err != nil {
-			return err
-	}
-	return c.JSON(http.StatusOK, Items{Items: items})
-}
-
-
-// Get item by ID
-func getItem(c echo.Context) error {
-	// Get item_id from URL
-	id := c.Param("id")
-
-	// Get item list
-	items, err := loadItemsFromFile()
-	if err != nil {
-			return err
-	}
-
-	// Find the item matching id
-	for _, item := range items {
-		if item.ID == id {
-					return c.JSON(http.StatusOK, item)
-			}
-	}
-
-	// If the item is not found
-	return c.JSON(http.StatusNotFound, map[string]string{"message": "Item not found"})
-}
-
-
-func addItem(c echo.Context) error {
-	id := c.FormValue("id")
-	name := c.FormValue("name")
-	category := c.FormValue("category")
-
-	// Receive image files
-	file, err := c.FormFile("image")
-	if err != nil {
-		return err
-	}
-	c.Logger().Infof("Receive item: %s", name)
-
-	// Open file
-	src, err := file.Open()
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-
-	// Read file and calculate hash value
-	hash := sha256.New()
-	if _, err := io.Copy(hash, src); err != nil {
-		return err
-	}
-	hashInBytes := hash.Sum(nil)
-	hashString := hex.EncodeToString(hashInBytes)
-
-	// Generate file names from hash values
-	img_name := hashString + ".jpg"
-
-	// Save images in the images directory
-	dst, err := os.Create(filepath.Join(ImgDir, img_name))
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
-
-	// move the file pointer back to the beginning
-	src.Seek(0, io.SeekStart)
-	if _, err := io.Copy(dst, src); err != nil {
-		return err
-	}
-
-	newItem := Item{ID:id, Name: name, Category: category, imageFilename:img_name}
-
-	// Read the current item list from items.json
-	var items Items
-	data, err := ioutil.ReadFile(ItemsFile)
-	if err == nil {
-		json.Unmarshal(data, &items)
-	}
-
-	//　Add new item to list
-	items.Items = append(items.Items, newItem)
-	updatedData, err := json.Marshal(items)
-	if err != nil {
-		return err
-	}
-
-	// Encode updated item list to JSON
-	err = ioutil.WriteFile(ItemsFile, updatedData, 0644)
-	if err != nil {
-		return err
-	}
-
-	message := fmt.Sprintf("item received: %s", name)
-	res := Response{Message: message}
-
-	return c.JSON(http.StatusOK, res)
-}
-
-
-func getImg(c echo.Context) error {
-	// Create image path
-	imgPath := path.Join(ImgDir, c.Param("imageFilename"))
-
-	if !strings.HasSuffix(imgPath, ".jpg") {
-		res := Response{Message: "Image path does not end with .jpg"}
-		return c.JSON(http.StatusBadRequest, res)
-	}
-	if _, err := os.Stat(imgPath); err != nil {
-		c.Logger().Debugf("Image not found: %s", imgPath)
-		imgPath = path.Join(ImgDir, "default.jpg")
-	}
-	return c.File(imgPath)
-}
-
 func main() {
+	if err := os.Chdir("../"); err != nil {
+		log.Fatalf("Failed to change current directory: %v", err)
+	}
 	e := echo.New()
 
 	// Middleware
@@ -207,9 +42,12 @@ func main() {
 	e.GET("/", root)
 	e.GET("/items", getItems)
 	e.GET("/items/:id", getItem)
+	e.GET("/search", searchItems)
 	e.POST("/items", addItem)
+	e.POST("/categories", addCategory)
+	e.GET("/categories", getCategories)
+	e.GET("/categories/:id", getCategory)
 	e.GET("/image/:imageFilename", getImg)
-
 
 	// Start server
 	e.Logger.Fatal(e.Start(":9000"))
