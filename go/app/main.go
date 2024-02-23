@@ -18,9 +18,9 @@ func root(c echo.Context) error {
 
 
 func main() {
-	if err := os.Chdir("../"); err != nil {
-		log.Fatalf("Failed to change current directory: %v", err)
-	}
+	// if err := os.Chdir("../"); err != nil {
+	// 	log.Fatalf("Failed to change current directory: %v", err)
+	// }
 	e := echo.New()
 
 	// Middleware

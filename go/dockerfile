@@ -1,8 +1,20 @@
 FROM alpine
 
+RUN apk add --no-cache go gcc musl-dev
 RUN addgroup -S mercari && adduser -S trainee -G mercari
 # RUN chown -R trainee:mercari /path/to/db
 
+WORKDIR /app
+COPY go/go.mod go/go.sum .
+RUN go mod download
+COPY db/mercari.sqlite3 .
+COPY go/images/ /app/images/
+COPY go/app .
+
+RUN CGO_ENABLED=1 go build -o myapp .
+
+RUN chown -R trainee:mercari /app
 USER trainee
 
-CMD ["go", "version"]
+EXPOSE 9000
+CMD ["./myapp"]

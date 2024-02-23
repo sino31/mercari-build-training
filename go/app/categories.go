@@ -60,7 +60,7 @@ func addCategory(c echo.Context) error {
 	newCategory := Category{ID: id, Name: name}
 
 	// Open the db
-	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
+	db, err := sql.Open("sqlite3", DbPath)
 	if err != nil {
 			return err
 	}

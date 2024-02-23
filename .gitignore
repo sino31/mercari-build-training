@@ -1,4 +1,6 @@
 db/*.sqlite3
-go.sum
+go/go.sum
 .DS_Store
 go/.DS_Store
+data/履修.png
+data/sample.JPG

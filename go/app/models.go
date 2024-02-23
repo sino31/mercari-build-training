@@ -1,9 +1,9 @@
 package main
 
 const (
-	ImgDir = "go/images"
+	DbPath="mercari.sqlite3"
+	ImgDir="images"
 )
-
 
 type Item struct {
 	ID     int `json:"id"`

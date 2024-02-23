@@ -10,7 +10,7 @@ import (
 
 // load of items db
 func loadItemsFromDB() ([]Item, error) {
-	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
+	db, err := sql.Open("sqlite3", DbPath)
 	if err != nil {
 			return nil, err
 	}
@@ -36,7 +36,7 @@ func loadItemsFromDB() ([]Item, error) {
 
 // load of categories db
 func loadCategoriesFromDB() ([]Category, error) {
-	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
+	db, err := sql.Open("sqlite3", DbPath)
 	if err != nil {
 			return nil, err
 	}

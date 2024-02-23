@@ -53,7 +53,7 @@ func getItem(c echo.Context) error {
 func searchItems(c echo.Context) error {
 	keyword := c.QueryParam("keyword")
 
-	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
+	db, err := sql.Open("sqlite3", DbPath)
 	if err != nil {
 			return err
 	}
@@ -130,7 +130,7 @@ func addItem(c echo.Context) error {
 	newItem := Item{ID: id, Name: name, Category_id: category_id, imageFilename: img_name}
 
 	// Open the db
-	db, err := sql.Open("sqlite3", "db/mercari.sqlite3")
+	db, err := sql.Open("sqlite3", DbPath)
 	if err != nil {
 			return err
 	}
