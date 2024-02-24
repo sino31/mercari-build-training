@@ -24,11 +24,16 @@ func loadItemsFromDB() ([]Item, error) {
 
 	var items []Item
 	for rows.Next() {
-			var item Item
-			if err := rows.Scan(&item.ID, &item.Name, &item.Category_id, &item.imageFilename); err != nil {
-					return nil, err
-			}
-			items = append(items, item)
+		var itemDB DBItem
+		if err := rows.Scan(&itemDB.ID, &itemDB.Name, &itemDB.Category_id, &itemDB.Image_name); err != nil {
+				return nil, err
+		}
+		category_name, err := getCategoryName(itemDB.Category_id)
+		if err != nil {
+			return nil, err
+		}
+		item := convertToItem(itemDB, category_name)
+		items = append(items, item)
 	}
 	return items, nil
 }
@@ -76,3 +81,15 @@ func getCategoryID(category_name string) (int, error) {
 }
 
 
+func getCategoryName(category_id int) (string, error) {
+	categories, err := loadCategoriesFromDB()
+	if err != nil {
+			return "", err
+	}
+	for _, category := range categories {
+		if category.ID == category_id {
+				return category.Name, nil
+		}
+	}
+	return "", fmt.Errorf("Category not found")
+}

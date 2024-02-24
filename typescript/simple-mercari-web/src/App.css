@@ -1,49 +1,155 @@
 .App {
-  text-align: center;
+    text-align: center;
 }
 
 .Title {
-  background-color: #222427;
-  min-height: 8vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: left;
-  font-size: calc(10px + 1vmin);
-  color: white;
+    background-color: #222427;
+    min-height: 8vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande",
+        "Lucida Sans", Arial, sans-serif;
+    font-size: calc(20px + 1vmin);
+    color: white;
 }
 
 .Listing {
-  background-color: #222427;
-  min-height: 8vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: left;
-  font-size: calc(10px + 1vmin);
-  color: white;
+    background-color: #222427;
+    min-height: 8vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.CreateButton {
+    margin: 0 10px;
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    background-color: #222427;
+    cursor: pointer;
+    color: white;
+}
+
+.CreateButton:hover {
+    background-color: #778899;
+}
+
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modalContent {
+    max-width: 500px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    position: relative;
+}
+
+.modalContent form input,
+.modalContent form button {
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    color: black;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.modalContent form button {
+    background-color: #b7cde0;
+    transition: background-color 0.3s;
+}
+
+.modalContent form button:hover {
+    background-color: #64788c;
+    color: white;
+}
+
+.modalContent form label {
+    color: black;
+}
+
+.modalCloseButton {
+    position: absolute;
+    top: 3px;
+    right: 8px;
+    border: none;
+    background-color: transparent;
+    color: gray;
+    font-size: 40px;
+    cursor: pointer;
+}
+
+.Container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.CategorySection {
+    flex: 2;
+    padding-left: 20px;
 }
 
 .ItemList {
-  background-color: #222427;
-  min-height: 8vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: left;
-  font-size: calc(10px + 1vmin);
-  color: white;
+    flex: 8;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    justify-items: center;
+    gap: 10px;
+    padding: 10px;
+    margin-right: 30px;
 }
 
-.App-link {
-  color: #61dafb;
+.ItemImage {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    margin-top: 10px;
+}
+
+.CategoryButton {
+    margin: 5px;
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.CategoryButton.active {
+    border-color: #000;
+    background-color: #e7e7e7;
+}
+
+.CategoryList {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-left: 30px;
+}
+
+.Item .App-link {
+    color: #61dafb;
 }
 
 @keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }

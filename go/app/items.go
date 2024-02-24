@@ -70,11 +70,16 @@ func searchItems(c echo.Context) error {
 	// Stores data in the Item structure (if multiple hits are received, they are all grouped together as items)
 	var items []Item
 	for rows.Next() {
-			var item Item
-			if err := rows.Scan(&item.ID, &item.Name, &item.Category_id, &item.imageFilename); err != nil {
+			var db_item DBItem
+			if err := rows.Scan(&db_item.ID, &db_item.Name, &db_item.Category_id, &db_item.Image_name); err != nil {
 					return err
 			}
-			items = append(items, item)
+			category_name, err := getCategoryName(db_item.Category_id)
+			if err != nil {
+				return err
+		}
+		item := convertToItem(db_item, category_name)
+		items = append(items, item)
 	}
 	return c.JSON(http.StatusOK, Items{Items: items})
 }
@@ -82,11 +87,6 @@ func searchItems(c echo.Context) error {
 
 // Add item
 func addItem(c echo.Context) error {
-	idStr := c.FormValue("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-			return c.JSON(http.StatusBadRequest, Response{Message: "Invalid ID format"})
-	}
 	name := c.FormValue("name")
 	category := c.FormValue("category")
 	category_id, err := getCategoryID(category);
@@ -127,8 +127,6 @@ func addItem(c echo.Context) error {
 		return err
 	}
 
-	newItem := Item{ID: id, Name: name, Category_id: category_id, imageFilename: img_name}
-
 	// Open the db
 	db, err := sql.Open("sqlite3", DbPath)
 	if err != nil {
@@ -137,8 +135,7 @@ func addItem(c echo.Context) error {
 	defer db.Close()
 
 	// Add new items to the db
-	_, err = db.Exec("INSERT INTO items (id, name, category_id, image_name) VALUES (?, ?, ?, ?)",
-			newItem.ID, newItem.Name, newItem.Category_id, newItem.imageFilename)
+	_, err = db.Exec("INSERT INTO items (name, category_id, image_name) VALUES (?, ?, ?)", name, category_id, img_name)
 	if err != nil {
 			return err
 	}
@@ -148,5 +145,4 @@ func addItem(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, res)
 }
-
 
