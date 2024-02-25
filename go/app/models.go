@@ -1,7 +1,7 @@
 package main
 
 const (
-	DbPath="../db/mercari.sqlite3"
+	DbPath="db/mercari.sqlite3"
 	ImgDir="images"
 )
 
