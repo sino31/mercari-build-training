@@ -39,3 +39,13 @@ func getImg(c echo.Context) error {
 	}
 	return c.File(imgPath)
 }
+
+
+func convertToItem(itemDB DBItem, categoryName string) Item {
+	return Item{
+			ID:       itemDB.ID,
+			Name:     itemDB.Name,
+			Category: categoryName,
+			Image_name: itemDB.Image_name,
+	}
+}

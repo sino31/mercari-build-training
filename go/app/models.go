@@ -1,17 +1,23 @@
 package main
 
 const (
-	DbPath="mercari.sqlite3"
+	DbPath="../db/mercari.sqlite3"
 	ImgDir="images"
 )
 
 type Item struct {
 	ID     int `json:"id"`
 	Name     string `json:"name"`
-	Category_id int `json:"category"`
-	imageFilename string `json:"img"`
+	Category string `json:"category"`
+	Image_name string `json:"image_name"`
 }
 
+type DBItem struct {
+	ID     int
+	Name     string
+	Category_id int
+	Image_name string
+}
 
 type Items struct {
 	Items []Item `json:"items"`
@@ -25,7 +31,7 @@ type Category struct {
 
 
 type Categories struct {
-	Categories []Category `json:"Categories"`
+	Categories []Category `json:"categories"`
 }
 
 

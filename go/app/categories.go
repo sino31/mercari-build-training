@@ -49,15 +49,9 @@ func getCategory(c echo.Context) error {
 
 // Create a categories
 func addCategory(c echo.Context) error {
-	idStr := c.FormValue("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-			return c.JSON(http.StatusBadRequest, Response{Message: "Invalid ID format"})
-	}
-
 	name := c.FormValue("name")
 
-	newCategory := Category{ID: id, Name: name}
+	newCategory := Category{Name: name}
 
 	// Open the db
 	db, err := sql.Open("sqlite3", DbPath)
@@ -67,7 +61,7 @@ func addCategory(c echo.Context) error {
 	defer db.Close()
 
 	// Add new category to the db
-	_, err = db.Exec("INSERT INTO categories (id, name) VALUES (?, ?)", newCategory.ID, newCategory.Name)
+	_, err = db.Exec("INSERT INTO categories (name) VALUES (?)", newCategory.Name)
 	if err != nil {
 			return err
 	}
